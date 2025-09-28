@@ -286,4 +286,70 @@ class TestStandardHTMLBuilder:
 
         assert builder._fragments[-1] == "<li></li>\n"
 
+    #---------------------------
+    # Test for end_list()
+    #---------------------------
+
+    def test_end_list_closes_ul(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+
+        builder.end_list()
+
+        assert builder._list_open is False
+        assert builder._fragments[-1] == "</ul>\n"
+
+    def test_end_list_with_items(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.add_list_item("A")
+        builder.add_list_item("B")
+
+        builder.end_list()
+
+        html = "".join(builder._fragments)
+        assert "<ul>\n<li>A</li>\n<li>B</li>\n</ul>\n" in html
+        assert builder._list_open is False
+
+    def test_end_list_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.end_list()
+
+    def test_end_list_after_end_document_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.end_document()
+        with pytest.raises(RuntimeError, match="document already ended"):
+            builder.end_list()
+
+    def test_end_list_without_open_list_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        with pytest.raises(RuntimeError, match="no open list to end"):
+            builder.end_list()
+
+    def test_end_list_twice_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.end_list()
+
+        with pytest.raises(RuntimeError, match="no open list to end"):
+            builder.end_list()
+
+    def test_after_end_list_other_blocks_do_not_reclose(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.add_list_item("x")
+        builder.end_list()
+
+        # Agora adicionar um heading não deve tentar fechar lista de novo
+        builder.add_heading("Next Topic", level=2)
+        html = "".join(builder._fragments)
+        assert html.count("</ul>") == 1
+        assert "</ul>\n<h2>Next Topic</h2>\n" in html
         

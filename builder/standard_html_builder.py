@@ -153,3 +153,31 @@ class StandardHtmlBuilder(HTMLBuilder):
         raise RuntimeError("no open list to add item")
 
     self._fragments.append(f"<li>{text}</li>\n")
+    
+  def end_list(self) -> None:
+    """
+    Close the currently open unordered list (<ul>).
+
+    Responsibilities:
+    - Append "</ul>\n" to the fragments buffer.
+    - Mark the internal state as list-closed.
+
+    Rules:
+    - Must be called after start_document() and before end_document().
+    - Raises RuntimeError if called before a document starts or after it ends.
+    - Raises RuntimeError if no list is currently open (non-idempotent).
+
+    Raises:
+    - RuntimeError: "document not started" | "document already ended" | "no open list to end"
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
+
+    if getattr(self, "_doc_ended", False):
+        raise RuntimeError("document already ended")
+
+    if not getattr(self, "_list_open", False):
+        raise RuntimeError("no open list to end")
+
+    self._fragments.append("</ul>\n")
+    self._list_open = False
