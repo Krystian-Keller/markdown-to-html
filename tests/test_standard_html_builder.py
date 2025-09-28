@@ -235,5 +235,55 @@ class TestStandardHTMLBuilder:
         assert builder._fragments[-1] == "<ul>\n"
         assert not any("<li>" in frag for frag in builder._fragments)
 
+    #---------------------------
+    # Test for add_list_item()
+    #---------------------------
+    
+    def test_add_list_item_appends_li(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+
+        builder.add_list_item("Item A")
+
+        assert builder._list_open is True
+        assert builder._fragments[-1] == "<li>Item A</li>\n"
+
+    def test_add_list_item_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.add_list_item("X")
+
+    def test_add_list_item_after_end_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.end_document()
+        with pytest.raises(RuntimeError, match="document already ended"):
+            builder.add_list_item("X")
+
+    def test_add_list_item_without_open_list_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        with pytest.raises(RuntimeError, match="no open list to add item"):
+            builder.add_list_item("X")
+
+    def test_add_list_item_multiple_items_preserve_order(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+
+        builder.add_list_item("A")
+        builder.add_list_item("B")
+
+        assert builder._fragments[-2:] == ["<li>A</li>\n", "<li>B</li>\n"]
+
+    def test_add_list_item_allows_empty_text(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+
+        builder.add_list_item("")
+
+        assert builder._fragments[-1] == "<li></li>\n"
 
         
