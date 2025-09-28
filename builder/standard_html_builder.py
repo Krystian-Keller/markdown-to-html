@@ -1,100 +1,128 @@
 from builder.html_builder import HTMLBuilder
 
 class StandardHtmlBuilder(HTMLBuilder):
-    """
-    Concrete implementation of HtmlBuilder.
+  
+  """
+  Concrete implementation of HtmlBuilder.
 
-    This builder accumulates HTML fragments step by step to construct
-    a complete HTML document from parsed Markdown content.
+  This builder accumulates HTML fragments step by step to construct
+  a complete HTML document from parsed Markdown content.
+
+  Responsibilities:
+  - Manage internal state of the document (started/ended, open lists, etc.).
+  - Collect body fragments as headings, paragraphs, and lists are added.
+  - Handle inline formatting (bold, italic, bold+italic).
+  - Provide methods to retrieve either the body-only or the full HTML page
+    (with <!DOCTYPE html>, <html>, <head>, <title>, and <body>).
+
+  Notes:
+  - `start_document()` must be called before adding content.
+  - `end_document()` finalizes the building process.
+  - `get_body()` returns only the body fragments.
+  - `get_full_page()` wraps the body in a complete HTML page.
+  """
+    
+  def start_document(self, title: str = None) -> None:
+    self._doc_started = True
+    self._doc_ended = False
+    self._fragments = []
+    self._list_open = False
+    self._explicit_title = title
+    self._first_h1_title = None
+    
+    
+  def end_document(self) -> None:
+    """
+    Finalize the current document.
 
     Responsibilities:
-    - Manage internal state of the document (started/ended, open lists, etc.).
-    - Collect body fragments as headings, paragraphs, and lists are added.
-    - Handle inline formatting (bold, italic, bold+italic).
-    - Provide methods to retrieve either the body-only or the full HTML page
-      (with <!DOCTYPE html>, <html>, <head>, <title>, and <body>).
+    - Close any still-open structures (e.g., an <ul> list).
+    - Seal the builder so no further content can be added.
+    - Does NOT return HTML nor write files; use get_body()/get_full_page() for output.
 
-    Notes:
-    - `start_document()` must be called before adding content.
-    - `end_document()` finalizes the building process.
-    - `get_body()` returns only the body fragments.
-    - `get_full_page()` wraps the body in a complete HTML page.
+    Rules:
+    - Must be called only after start_document(); otherwise raises RuntimeError.
+    - Not idempotent: calling it twice raises RuntimeError.
+    - After ending, any add_* or start_*/end_* content methods must raise RuntimeError.
+
+    Raises:
+    - RuntimeError: if called before start_document() or if the document was already ended.
     """
-    
-    def start_document(self, title: str = None) -> None:
-        
-        self._doc_started = True
-        self._doc_ended = False
-        self._fragments = []
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
+
+    if getattr(self, "_doc_ended", False):
+        raise RuntimeError("document already ended")
+
+    # Close any open <ul> to ensure valid HTML
+    if self._list_open:
+        self._fragments.append("</ul>\n")
         self._list_open = False
-        self._explicit_title = title
-        self._first_h1_title = None
+
+    # Seal the document
+    self._doc_ended = True
     
-    
-    def end_document(self) -> None:
-      """
-      Finalize the current document.
+  def add_heading(self, text: str, level: int = 1) -> None:
+    """
+    Add a heading element (<h1> to <h6>) to the document.
 
-      Responsibilities:
-      - Close any still-open structures (e.g., an <ul> list).
-      - Seal the builder so no further content can be added.
-      - Does NOT return HTML nor write files; use get_body()/get_full_page() for output.
+    Responsibilities:
+    - Insert an HTML heading at the requested level.
+    - Capture the first <h1> as a fallback <title> if none was explicitly provided.
 
-      Rules:
-      - Must be called only after start_document(); otherwise raises RuntimeError.
-      - Not idempotent: calling it twice raises RuntimeError.
-      - After ending, any add_* or start_*/end_* content methods must raise RuntimeError.
+    Args:
+    - text (str): The heading text.
+    - level (int): The heading level (1-6). Defaults to 1.
 
-      Raises:
-      - RuntimeError: if called before start_document() or if the document was already ended.
-      """
-      if not getattr(self, "_doc_started", False):
-          raise RuntimeError("document not started")
+    Raises:
+    - RuntimeError: if called before start_document() or after end_document().
+    - ValueError: if level is not between 1 and 6.
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
 
-      if getattr(self, "_doc_ended", False):
-          raise RuntimeError("document already ended")
+    if getattr(self, "_doc_ended", False):
+        raise RuntimeError("document already ended")
 
-      # Close any open <ul> to ensure valid HTML
-      if self._list_open:
-          self._fragments.append("</ul>")
-          self._list_open = False
+    if not (1 <= level <= 6):
+        raise ValueError("heading level must be between 1 and 6")
 
-      # Seal the document
-      self._doc_ended = True
-      
-    def add_heading(self, text: str, level: int = 1) -> None:
-      """
-      Add a heading element (<h1> to <h6>) to the document.
+    if level == 1 and self._first_h1_title is None and self._explicit_title is None:
+        self._first_h1_title = text
 
-      Responsibilities:
-      - Insert an HTML heading at the requested level.
-      - Capture the first <h1> as a fallback <title> if none was explicitly provided.
+    if self._list_open:
+        self._fragments.append("</ul>\n")
+        self._list_open = False
 
-      Args:
-      - text (str): The heading text.
-      - level (int): The heading level (1-6). Defaults to 1.
+    self._fragments.append(f"<h{level}>{text}</h{level}>\n")
+  
+  def start_list(self) -> None:
+    """
+    Open an unordered list (<ul>) block.
 
-      Raises:
-      - RuntimeError: if called before start_document() or after end_document().
-      - ValueError: if level is not between 1 and 6.
-      """
-      if not getattr(self, "_doc_started", False):
-          raise RuntimeError("document not started")
+    Responsibilities:
+    - Push "<ul>\n" into the fragments buffer.
+    - Mark the internal state as list-open.
 
-      if getattr(self, "_doc_ended", False):
-          raise RuntimeError("document already ended")
+    Rules:
+    - Must be called after start_document() and before end_document().
+    - Raises RuntimeError if called before a document starts or after it ends.
+    - Raises RuntimeError if a list is already open (nested lists not supported yet).
 
-      if not (1 <= level <= 6):
-          raise ValueError("heading level must be between 1 and 6")
+    Raises:
+    - RuntimeError: "document not started" | "document already ended" | "list already open"
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
 
-      if level == 1 and self._first_h1_title is None and self._explicit_title is None:
-          self._first_h1_title = text
+    if getattr(self, "_doc_ended", False):
+        raise RuntimeError("document already ended")
 
-      if self._list_open:
-          self._fragments.append("</ul>")
-          self._list_open = False
+    if getattr(self, "_list_open", False):
+        raise RuntimeError("list already open")
 
-      self._fragments.append(f"<h{level}>{text}</h{level}>")
+    self._fragments.append("<ul>\n")
+    self._list_open = True 
 
         
     

@@ -59,7 +59,7 @@ class TestStandardHTMLBuilder:
         builder.end_document()
         
         assert builder._list_open is False
-        assert builder._fragments[-1] == "</ul>" or "</ul>" in "".join(builder._fragments)
+        assert builder._fragments[-1] == "</ul>\n" or "</ul>\n" in "".join(builder._fragments)
         
     def test_end_document_after_reset_state(self):
         builder = StandardHtmlBuilder()
@@ -86,7 +86,7 @@ class TestStandardHTMLBuilder:
         builder.start_document()
         builder.add_heading("Main Title")  # default level = 1
 
-        assert builder._fragments[-1] == "<h1>Main Title</h1>"
+        assert builder._fragments[-1] == "<h1>Main Title</h1>\n"
 
     def test_add_heading_h2_and_h3(self):
         builder = StandardHtmlBuilder()
@@ -135,7 +135,7 @@ class TestStandardHTMLBuilder:
 
         html = "".join(builder._fragments)
         # deve ter fechado a lista antes do <h2>
-        assert "</ul><h2>Next Section</h2>" in html
+        assert "</ul>\n<h2>Next Section</h2>" in html
         assert builder._list_open is False
 
     def test_first_h1_sets_title_when_no_explicit_title(self):
@@ -171,9 +171,69 @@ class TestStandardHTMLBuilder:
         builder.add_heading("C", 3)
 
         assert builder._fragments == [
-            "<h1>A</h1>",
-            "<h2>B</h2>",
-            "<h3>C</h3>",
+            "<h1>A</h1>\n",
+            "<h2>B</h2>\n",
+            "<h3>C</h3>\n",
         ]
+        
+    #---------------------------
+    # Test for start_list()
+    #---------------------------
+    
+    def test_start_list_opens_ul(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.start_list()
+
+        assert builder._list_open is True
+        assert builder._fragments[-1] == "<ul>\n"
+        assert builder._doc_started is True
+        assert builder._doc_ended is False
+
+    def test_start_list_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.start_list()
+
+    def test_start_list_after_end_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.end_document()
+        with pytest.raises(RuntimeError, match="document already ended"):
+            builder.start_list()
+
+    def test_start_list_twice_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.start_list()
+        with pytest.raises(RuntimeError, match="list already open"):
+            builder.start_list()
+
+    def test_start_list_then_heading_closes_list(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.start_list()
+        # simulate at least one item to make it realistic ### HARDCODED
+        builder._fragments.append("<li>item</li>\n")
+
+        builder.add_heading("Next Section", level=2)
+
+        html = "".join(builder._fragments)
+        assert "</ul>\n<h2>Next Section</h2>\n" in html
+        assert builder._list_open is False
+
+    def test_start_list_does_not_create_li_automatically(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.start_list()
+
+        # Deve haver apenas a abertura do <ul>, nenhum <li> automático
+        assert builder._fragments[-1] == "<ul>\n"
+        assert not any("<li>" in frag for frag in builder._fragments)
+
 
         
