@@ -352,4 +352,57 @@ class TestStandardHTMLBuilder:
         html = "".join(builder._fragments)
         assert html.count("</ul>") == 1
         assert "</ul>\n<h2>Next Topic</h2>\n" in html
+    
+    #---------------------------
+    # Test for add_paragraph()
+    #---------------------------
+
+    def test_add_paragraph_basic(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.add_paragraph("Hello World")
+
+        assert builder._fragments[-1] == "<p>Hello World</p>\n"
+
+    def test_add_paragraph_multiple_preserve_order(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.add_paragraph("First")
+        builder.add_paragraph("Second")
+
+        assert builder._fragments[-2:] == ["<p>First</p>\n", "<p>Second</p>\n"]
+
+    def test_add_paragraph_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.add_paragraph("X")
+
+    def test_add_paragraph_after_end_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.end_document()
+        with pytest.raises(RuntimeError, match="document already ended"):
+            builder.add_paragraph("X")
+
+    def test_add_paragraph_closes_open_list(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.add_list_item("A")
+
+        builder.add_paragraph("After list")
+
+        html = "".join(builder._fragments)
+        assert "</ul>\n<p>After list</p>\n" in html
+        assert builder._list_open is False
+
+    def test_add_paragraph_allows_empty_text(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        builder.add_paragraph("")
+
+        assert builder._fragments[-1] == "<p></p>\n"
         

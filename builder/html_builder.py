@@ -26,6 +26,9 @@ class HTMLBuilder(ABC):
     def end_list(self):
         pass
     
+    def add_paragraph(self, text):
+        pass
+    
     def get_body(self):
         pass
     

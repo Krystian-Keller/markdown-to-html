@@ -181,3 +181,34 @@ class StandardHtmlBuilder(HTMLBuilder):
 
     self._fragments.append("</ul>\n")
     self._list_open = False
+    
+  def add_paragraph(self, text: str) -> None:
+    """
+    Add a paragraph (<p>...</p>) to the document.
+
+    Responsibilities:
+    - Append "<p>{text}</p>\n" to the fragments buffer.
+    - If a <ul> is open, close it before adding the paragraph (valid HTML flow).
+
+    Args:
+    - text (str): The paragraph content. Can be empty, resulting in <p></p>.
+
+    Rules:
+    - Must be called after start_document() and before end_document().
+    - Raises RuntimeError if called before a document starts or after it ends.
+    - If a list is open, it is automatically closed before adding the paragraph.
+
+    Raises:
+    - RuntimeError: "document not started" | "document already ended"
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
+
+    if getattr(self, "_doc_ended", False):
+        raise RuntimeError("document already ended")
+
+    if getattr(self, "_list_open", False):
+        self._fragments.append("</ul>\n")
+        self._list_open = False
+
+    self._fragments.append(f"<p>{text}</p>\n")
