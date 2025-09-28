@@ -1,4 +1,4 @@
-from html_builder import HTMLBuilder
+from builder.html_builder import HTMLBuilder
 
 class StandardHtmlBuilder(HTMLBuilder):
     """
@@ -25,7 +25,7 @@ class StandardHtmlBuilder(HTMLBuilder):
         
         self._doc_started = True
         self._doc_ended = False
-        self._fragments = list[str]
+        self._fragments = []
         self._list_open = False
         self._explicit_title = title
         self._first_h1_title = None
