@@ -21,7 +21,7 @@ class StandardHtmlBuilder(HTMLBuilder):
     - `get_full_page()` wraps the body in a complete HTML page.
     """
     
-    def start_document(self, title: str = None):
+    def start_document(self, title: str = None) -> None:
         
         self._doc_started = True
         self._doc_ended = False
@@ -29,6 +29,38 @@ class StandardHtmlBuilder(HTMLBuilder):
         self._list_open = False
         self._explicit_title = title
         self._first_h1_title = None
+    
+    
+    def end_document(self) -> None:
+      """
+      Finalize the current document.
+
+      Responsibilities:
+      - Close any still-open structures (e.g., an <ul> list).
+      - Seal the builder so no further content can be added.
+      - Does NOT return HTML nor write files; use get_body()/get_full_page() for output.
+
+      Rules:
+      - Must be called only after start_document(); otherwise raises RuntimeError.
+      - Not idempotent: calling it twice raises RuntimeError.
+      - After ending, any add_* or start_*/end_* content methods must raise RuntimeError.
+
+      Raises:
+      - RuntimeError: if called before start_document() or if the document was already ended.
+      """
+      if not getattr(self, "_doc_started", False):
+          raise RuntimeError("document not started")
+
+      if getattr(self, "_doc_ended", False):
+          raise RuntimeError("document already ended")
+
+      # Close any open <ul> to ensure valid HTML
+      if self._list_open:
+          self._fragments.append("</ul>")
+          self._list_open = False
+
+      # Seal the document
+      self._doc_ended = True
+
         
-        return super().start_document(title)
     
