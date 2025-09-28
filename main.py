@@ -2,7 +2,7 @@ import os
 from tkinter import Tk
 from tkinter import filedialog
 from builder import HtmlBuilder  #
-from diretor import Diretor
+from director.diretor import Diretor
 
 
 # ================= MAIN ==================
