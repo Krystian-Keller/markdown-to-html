@@ -234,3 +234,45 @@ class StandardHtmlBuilder(HTMLBuilder):
 
     # No mutation here: purely read-only
     return "".join(self._fragments)
+  
+  def get_full_page(self) -> str:
+    """
+    Return the complete HTML page including <!DOCTYPE>, <html>, <head>, <title>, and <body>.
+
+    Responsibilities:
+    - Wrap the accumulated body fragments in a full HTML page structure.
+    - Choose the best available <title>: explicit > first h1 > fallback.
+
+    Rules:
+    - Must be called after start_document(); otherwise raises RuntimeError.
+    - May be called after end_document() (read-only).
+    - Does not mutate the builder state.
+
+    Returns:
+    - str: The full HTML document as a string.
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
+
+    # Determine title
+    title = (
+        self._explicit_title
+        or self._first_h1_title
+        or "Document"
+    )
+
+    body = "".join(self._fragments)
+
+    return (
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head>\n"
+        '  <meta charset="utf-8">\n'
+        f"  <title>{title}</title>\n"
+        "</head>\n"
+        "<body>\n"
+        f"{body}"
+        "</body>\n"
+        "</html>\n"
+    )
+ 

@@ -463,4 +463,93 @@ class TestStandardHTMLBuilder:
 
         assert body == "<h1>A</h1>\n<p>B</p>\n<ul>\n<li>C</li>\n</ul>\n"
     
-    
+    #---------------------------
+    # Test for get_full_page()
+    #---------------------------
+
+    def test_get_full_page_basic_structure(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document("My Title")
+        builder.add_paragraph("Hello")
+
+        html = builder.get_full_page()
+
+        assert html.startswith("<!DOCTYPE html>")
+        assert "<html>" in html and "</html>" in html
+        assert "<head>" in html and "</head>" in html
+        assert '<meta charset="utf-8">' in html
+        assert "<body>" in html and "</body>" in html
+        assert "<p>Hello</p>\n" in html
+        assert "<title>My Title</title>" in html
+
+    def test_get_full_page_title_from_first_h1_when_no_explicit_title(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("First H1", level=1)
+        builder.add_paragraph("Content")
+
+        html = builder.get_full_page()
+
+        assert "<title>First H1</title>" in html
+        assert "<h1>First H1</h1>\n" in html
+        assert "<p>Content</p>\n" in html
+
+    def test_get_full_page_fallback_title_when_no_title_and_no_h1(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_paragraph("Only content")
+
+        html = builder.get_full_page()
+
+        assert "<title>Document</title>" in html
+        assert "<p>Only content</p>\n" in html
+
+    def test_get_full_page_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.get_full_page()
+
+    def test_get_full_page_after_end_document_is_allowed(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document("Done")
+        builder.add_paragraph("x")
+        builder.end_document()
+
+        html = builder.get_full_page()
+
+        assert "<title>Done</title>" in html
+        assert "<p>x</p>\n" in html
+
+    def test_get_full_page_does_not_mutate_state(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.add_list_item("A")
+
+        # Snapshot of state before
+        list_open_before = builder._list_open
+        fragments_before = "".join(builder._fragments)
+
+        html = builder.get_full_page()
+
+        # State must be unchanged
+        assert builder._list_open is list_open_before
+        assert "".join(builder._fragments) == fragments_before
+
+        # Body content must be embedded as-is
+        assert "<ul>\n<li>A</li>\n" in html  # list still open inside body snapshot
+
+    def test_get_full_page_preserves_body_order(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document("Order")
+        builder.add_heading("A", 1)
+        builder.add_paragraph("B")
+        builder.start_list()
+        builder.add_list_item("C")
+        builder.end_list()
+
+        html = builder.get_full_page()
+
+        body_seq = "<h1>A</h1>\n<p>B</p>\n<ul>\n<li>C</li>\n</ul>\n"
+        assert body_seq in html
+        assert "<title>Order</title>" in html
