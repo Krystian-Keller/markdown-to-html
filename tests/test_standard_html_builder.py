@@ -75,5 +75,105 @@ class TestStandardHTMLBuilder:
         assert builder._list_open is False
         assert builder._explicit_title == 'Test Title B'
         assert builder._first_h1_title is None
+        
+    
+    #---------------------------
+    # Test for add_heading()
+    #---------------------------
+    
+    def test_add_heading_h1_default_level(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("Main Title")  # default level = 1
+
+        assert builder._fragments[-1] == "<h1>Main Title</h1>"
+
+    def test_add_heading_h2_and_h3(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("Section", level=2)
+        builder.add_heading("Subsection", level=3)
+
+        html = "".join(builder._fragments)
+        assert "<h2>Section</h2>" in html
+        assert "<h3>Subsection</h3>" in html
+
+    def test_add_heading_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.add_heading("Main Title", level=1)
+
+    def test_add_heading_after_end_raises(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.end_document()
+        with pytest.raises(RuntimeError, match="document already ended"):
+            builder.add_heading("Main Title", level=1)
+
+    def test_add_heading_invalid_level_low(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        with pytest.raises(ValueError, match="heading level must be between 1 and 6"):
+            builder.add_heading("Main Title", level=0)
+
+    def test_add_heading_invalid_level_high(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        with pytest.raises(ValueError, match="heading level must be between 1 and 6"):
+            builder.add_heading("Section", level=7)
+
+    def test_add_heading_closes_open_list(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+
+        # simula lista aberta: Hardcode
+        builder._list_open = True
+        builder._fragments.append("<ul>")
+        builder._fragments.append("<li>item</li>")
+
+        builder.add_heading("Next Section", level=2)
+
+        html = "".join(builder._fragments)
+        # deve ter fechado a lista antes do <h2>
+        assert "</ul><h2>Next Section</h2>" in html
+        assert builder._list_open is False
+
+    def test_first_h1_sets_title_when_no_explicit_title(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("First H1", level=1)
+
+        assert builder._first_h1_title == "First H1"
+
+    def test_first_h1_not_used_if_explicit_title_exists(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document("Main Title")
+        builder.add_heading("First H1", level=1)
+
+        assert builder._explicit_title == "Main Title"
+        assert builder._first_h1_title is None
+
+    def test_first_h1_captured_only_once(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document() 
+        builder.add_heading("First", level=1)
+        builder.add_heading("Second", level=1)
+
+        assert builder._first_h1_title == "First"  # não deve sobrescrever
+        html = "".join(builder._fragments)
+        assert "<h1>First</h1>" in html and "<h1>Second</h1>" in html
+
+    def test_add_multiple_headings_order_is_preserved(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("A", 1)
+        builder.add_heading("B", 2)
+        builder.add_heading("C", 3)
+
+        assert builder._fragments == [
+            "<h1>A</h1>",
+            "<h2>B</h2>",
+            "<h3>C</h3>",
+        ]
 
         

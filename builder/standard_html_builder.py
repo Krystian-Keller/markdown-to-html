@@ -61,6 +61,40 @@ class StandardHtmlBuilder(HTMLBuilder):
 
       # Seal the document
       self._doc_ended = True
+      
+    def add_heading(self, text: str, level: int = 1) -> None:
+      """
+      Add a heading element (<h1> to <h6>) to the document.
+
+      Responsibilities:
+      - Insert an HTML heading at the requested level.
+      - Capture the first <h1> as a fallback <title> if none was explicitly provided.
+
+      Args:
+      - text (str): The heading text.
+      - level (int): The heading level (1-6). Defaults to 1.
+
+      Raises:
+      - RuntimeError: if called before start_document() or after end_document().
+      - ValueError: if level is not between 1 and 6.
+      """
+      if not getattr(self, "_doc_started", False):
+          raise RuntimeError("document not started")
+
+      if getattr(self, "_doc_ended", False):
+          raise RuntimeError("document already ended")
+
+      if not (1 <= level <= 6):
+          raise ValueError("heading level must be between 1 and 6")
+
+      if level == 1 and self._first_h1_title is None and self._explicit_title is None:
+          self._first_h1_title = text
+
+      if self._list_open:
+          self._fragments.append("</ul>")
+          self._list_open = False
+
+      self._fragments.append(f"<h{level}>{text}</h{level}>")
 
         
     
