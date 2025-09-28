@@ -212,3 +212,25 @@ class StandardHtmlBuilder(HTMLBuilder):
         self._list_open = False
 
     self._fragments.append(f"<p>{text}</p>\n")
+  
+  def get_body(self) -> str:
+    """
+    Return the accumulated HTML body as a single string.
+
+    Responsibilities:
+    - Join the internal fragments buffer into a single string.
+    - Provide a read-only view of the body content (no side effects).
+
+    Rules:
+    - Must be called after start_document(); otherwise raises RuntimeError.
+    - May be called after end_document() (read-only).
+    - Does NOT auto-close structures (e.g., open <ul>); it reflects current state.
+
+    Returns:
+    - str: The concatenated HTML body.
+    """
+    if not getattr(self, "_doc_started", False):
+        raise RuntimeError("document not started")
+
+    # No mutation here: purely read-only
+    return "".join(self._fragments)

@@ -405,4 +405,62 @@ class TestStandardHTMLBuilder:
         builder.add_paragraph("")
 
         assert builder._fragments[-1] == "<p></p>\n"
-        
+    
+    #---------------------------
+    # Test for get_body()
+    #---------------------------
+
+    def test_get_body_basic(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("A", level=1)
+
+        body = builder.get_body()
+
+        assert body == "<h1>A</h1>\n"
+
+    def test_get_body_before_start_raises(self):
+        builder = StandardHtmlBuilder()
+        with pytest.raises(RuntimeError, match="document not started"):
+            builder.get_body()
+
+    def test_get_body_after_end_document_returns_content(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_paragraph("x")
+        builder.end_document()
+
+        body = builder.get_body()
+
+        assert body == "<p>x</p>\n"
+
+    def test_get_body_is_read_only_does_not_close_open_list(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.start_list()
+        builder.add_list_item("item")
+
+        # Snapshot dos fragments antes
+        before = "".join(builder._fragments)
+
+        body = builder.get_body()
+
+        # Não deve fechar a lista nem alterar fragments
+        assert builder._list_open is True
+        assert body == before
+        assert "".join(builder._fragments) == before
+
+    def test_get_body_preserves_order(self):
+        builder = StandardHtmlBuilder()
+        builder.start_document()
+        builder.add_heading("A", 1)
+        builder.add_paragraph("B")
+        builder.start_list()
+        builder.add_list_item("C")
+        builder.end_list()
+
+        body = builder.get_body()
+
+        assert body == "<h1>A</h1>\n<p>B</p>\n<ul>\n<li>C</li>\n</ul>\n"
+    
+    
