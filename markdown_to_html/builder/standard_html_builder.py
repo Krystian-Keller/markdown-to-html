@@ -1,4 +1,4 @@
-from builder.html_builder import HTMLBuilder
+from ..builder.html_builder import HTMLBuilder
 
 class StandardHtmlBuilder(HTMLBuilder):
   

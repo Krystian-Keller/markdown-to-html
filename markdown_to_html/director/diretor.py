@@ -1,6 +1,6 @@
 import re
 from typing import Iterable, Callable, Optional
-from utils.inline import render_inline
+from ..utils.inline import render_inline
 
 
 class Diretor:
