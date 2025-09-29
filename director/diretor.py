@@ -8,10 +8,6 @@ class Diretor:
     Orquestra a construção do HTML a partir de linhas Markdown,
     chamando os métodos do Builder na ordem correta.
 
-    MVP:
-    - Parágrafos de linha única (cada linha “normal” vira um <p>).
-    - Fecha lista automaticamente ao mudar de bloco ou em linhas vazias.
-    - Não implementa inline formatting; aceita um inline_renderer opcional.
     """
 
     # Regex pré-compilados para desempenho e legibilidade

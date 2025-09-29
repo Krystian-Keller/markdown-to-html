@@ -110,62 +110,65 @@ class TestDiretor:
             ("end_document",),
         ]
 
+    # ---------------------------
+    # parse_text
+    # ---------------------------
+
+    def test_parse_text_delegates_to_parse_lines(self, monkeypatch):
+        builder = DummyBuilder()
+        diretor = Diretor(builder)
+
+        captured = {}
+
+        def fake_parse_lines(lines):
+            captured["lines"] = list(lines)
+
+        monkeypatch.setattr(diretor, "parse_lines", fake_parse_lines)
+
+        text = "linha A\nlinha B\n"
+        diretor.parse_text(text)
+
+        assert captured["lines"] == ["linha A", "linha B"]
+
+
+    def test_parse_text_runs_document_lifecycle_with_empty_input(self):
+        builder = DummyBuilder()
+        diretor = Diretor(builder)
+
+        diretor.parse_text("")  # sem linhas
+
+        # Deve abrir e encerrar o documento mesmo sem conteúdo
+        assert builder.calls == [
+            ("start_document", None),
+            ("end_document",),
+        ]
+
+
+    def test_parse_text_processes_basic_blocks_heading_list_paragraph(self):
+        builder = DummyBuilder()
+        diretor = Diretor(builder)
+
+        md = "# Titulo\n- item 1\n- item 2\nParagrafo\n"
+        diretor.parse_text(md)
+
+        # Ciclo abre/fecha documento
+        assert builder.calls[0] == ("start_document", None)
+        assert builder.calls[-1] == ("end_document",)
+
+        # Sequência central esperada (sem se apegar a todos os detalhes)
+        middle = builder.calls[1:-1]
+        assert middle == [
+            ("add_heading", "Titulo", 1),
+            ("start_list",),
+            ("add_list_item", "item 1"),
+            ("add_list_item", "item 2"),
+            ("end_list",),
+            ("add_paragraph", "Paragrafo"),
+        ]
+
 # ---------------------------
-# parse_text
+# parse_lines  
 # ---------------------------
-
-def test_parse_text_delegates_to_parse_lines(monkeypatch):
-    builder = DummyBuilder()
-    diretor = Diretor(builder)
-
-    captured = {}
-
-    def fake_parse_lines(lines):
-        captured["lines"] = list(lines)
-
-    monkeypatch.setattr(diretor, "parse_lines", fake_parse_lines)
-
-    text = "linha A\nlinha B\n"
-    diretor.parse_text(text)
-
-    assert captured["lines"] == ["linha A", "linha B"]
-
-
-def test_parse_text_runs_document_lifecycle_with_empty_input():
-    builder = DummyBuilder()
-    diretor = Diretor(builder)
-
-    diretor.parse_text("")  # sem linhas
-
-    # Deve abrir e encerrar o documento mesmo sem conteúdo
-    assert builder.calls == [
-        ("start_document", None),
-        ("end_document",),
-    ]
-
-
-def test_parse_text_processes_basic_blocks_heading_list_paragraph():
-    builder = DummyBuilder()
-    diretor = Diretor(builder)
-
-    md = "# Titulo\n- item 1\n- item 2\nParagrafo\n"
-    diretor.parse_text(md)
-
-    # Ciclo abre/fecha documento
-    assert builder.calls[0] == ("start_document", None)
-    assert builder.calls[-1] == ("end_document",)
-
-    # Sequência central esperada (sem se apegar a todos os detalhes)
-    middle = builder.calls[1:-1]
-    assert middle == [
-        ("add_heading", "Titulo", 1),
-        ("start_list",),
-        ("add_list_item", "item 1"),
-        ("add_list_item", "item 2"),
-        ("end_list",),
-        ("add_paragraph", "Paragrafo"),
-    ]
-
 
 class TestDiretorParseLines:
     def test_parse_lines_empty_input_opens_and_ends(self):
