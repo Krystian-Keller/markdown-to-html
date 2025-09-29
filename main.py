@@ -1,19 +1,15 @@
 import os
 from tkinter import Tk
 from tkinter import filedialog
-from builder import HtmlBuilder  #
+from builder import HtmlBuilder  
 from director.diretor import Diretor
 
-
-# ================= MAIN ==================
 def menu():
     print("=== Conversor Markdown → HTML ===")
 
-    # Inicializa o Tkinter (sem mostrar a janela principal)
     root = Tk()
     root.withdraw()
 
-    # Seleciona o arquivo Markdown
     md_file = filedialog.askopenfilename(
         title="Selecione o arquivo Markdown",
         filetypes=[("Markdown files", "*.md")]
@@ -22,22 +18,20 @@ def menu():
         print("Nenhum arquivo selecionado!")
         return
 
-    # Seleciona o diretório de saída
     save_dir = filedialog.askdirectory(title="Selecione a pasta de destino")
     if not save_dir:
-        save_dir = os.getcwd()  # usa diretório atual por padrão
+        save_dir = os.getcwd()  # diretório atual
 
     nome_arquivo = os.path.basename(md_file)
     saida = os.path.join(save_dir, nome_arquivo.replace(".md", ".html"))
 
-    # Builder + Diretor
+    # builder + diretor
     builder = HtmlBuilder()
     diretor = Diretor(builder)
 
     diretor.construir(md_file)
     html = builder.get_result()
 
-    # escreve saída
     with open(saida, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -46,3 +40,4 @@ def menu():
 
 if __name__ == "__main__":
     menu()
+
