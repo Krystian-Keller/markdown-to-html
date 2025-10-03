@@ -1,4 +1,3 @@
-# markdown_to_html/gui.py
 from __future__ import annotations
 
 import json

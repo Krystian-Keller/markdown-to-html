@@ -1,6 +1,6 @@
 import pytest
-from director.diretor import Diretor
-from utils.inline import render_inline
+from markdown_to_html.director.diretor import Diretor
+from markdown_to_html.utils.inline import render_inline
 
 
 # ---------------------------

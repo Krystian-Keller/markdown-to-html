@@ -1,4 +1,9 @@
-# main.py
+#########
+
+# FEITO POR KRYSTIAN KELLER E MAURO MOURA
+
+########
+
 from __future__ import annotations
 
 import argparse

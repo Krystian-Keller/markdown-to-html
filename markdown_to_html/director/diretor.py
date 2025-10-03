@@ -29,7 +29,6 @@ class Diretor:
         self.inline_renderer = inline_renderer or render_inline
         self.in_list = False  # controla se <ul> está aberta
 
-    # ------------- API pública -------------
 
     def parse_file(self, path_arquivo: str) -> None:
         """I/O fino: lê arquivo e delega para parse_text()."""
@@ -51,15 +50,13 @@ class Diretor:
         self._start_document()
 
         for raw_line in lines:
-            # remove somente o \n final para preservar espaços à esquerda quando necessário
+            
             line = raw_line.rstrip("\n")
 
-            # linha “efetivamente” vazia?
             if not line.strip():
                 self._close_list_if_open()
                 continue
 
-            # tolera indentação simples para a análise
             view = line.lstrip()
 
             # 1) Heading?
@@ -95,7 +92,6 @@ class Diretor:
             self.in_list = False
 
     def _handle_heading(self, match: re.Match) -> None:
-        # Fechar lista antes de heading garante HTML válido
         self._close_list_if_open()
 
         hashes = match.group(1)
@@ -116,13 +112,11 @@ class Diretor:
         self.builder.add_list_item(text)
 
     def _handle_paragraph_line(self, line: str) -> None:
-        # Fechar lista antes de parágrafo garante HTML válido
         self._close_list_if_open()
 
         text = self.inline_renderer(line.strip())
         self.builder.add_paragraph(text)
 
-    # ------------- Compat (opcional) -------------
 
     def construir(self, path_arquivo: str) -> None:
 

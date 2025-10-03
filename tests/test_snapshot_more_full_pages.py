@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 import pytest
-from builder.standard_html_builder import StandardHtmlBuilder
-from director.diretor import Diretor
+from markdown_to_html.builder.standard_html_builder import StandardHtmlBuilder
+from markdown_to_html.director.diretor import Diretor
 
 ROOT = Path(__file__).parent
 GOLDEN_DIR = ROOT / "golden"

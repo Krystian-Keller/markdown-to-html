@@ -1,6 +1,6 @@
 import pytest
-from builder.standard_html_builder import StandardHtmlBuilder
-from director.diretor import Diretor
+from markdown_to_html.builder.standard_html_builder import StandardHtmlBuilder
+from markdown_to_html.director.diretor import Diretor
 
 # 1) E2E simples: heading + parágrafo
 def test_integration_heading_and_paragraph():

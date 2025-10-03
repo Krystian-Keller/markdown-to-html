@@ -1,5 +1,5 @@
 import pytest
-from builder.standard_html_builder import StandardHtmlBuilder
+from markdown_to_html.builder.standard_html_builder import StandardHtmlBuilder
 
 class TestStandardHTMLBuilder:
     
